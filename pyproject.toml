@@ -1,0 +1,25 @@
+[build-system]
+requires = [
+    "setuptools>=65.0.0",
+    "setuptools_scm>=3.4.3",
+    "pyqt-distutils>=0.7.3",
+]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "remote_dread_lua_console"
+description = "My package description"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "GPL-3.0-or-later"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "PySide6-Essentials",
+]
+dynamic = ["version"]
+
+[project.scripts]
+remote-dread-lua-console = "remote_dread_lua_console.cli:main"

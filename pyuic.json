@@ -1,0 +1,13 @@
+{
+    "files": [
+        [
+            "ui_files/*.ui",
+            "src/remote_dread_lua_console/generated"
+        ]
+    ],
+    "hooks": [],
+    "pyrcc": "pyside6-rcc",
+    "pyrcc_options": "",
+    "pyuic": "pyside6-uic",
+    "pyuic_options": "--star-imports"
+}
