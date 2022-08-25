@@ -19,5 +19,6 @@ class GenerateTemplateCommand(egg_info):
 setup(
     cmdclass={
         "build_ui": build_ui,
+        'egg_info': GenerateTemplateCommand,
     },
 )
