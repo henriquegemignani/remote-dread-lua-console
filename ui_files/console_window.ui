@@ -37,6 +37,13 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
+         <widget class="QPushButton" name="connect_button">
+          <property name="text">
+           <string>Connect</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="execute_button">
           <property name="text">
            <string>Execute</string>

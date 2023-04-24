@@ -6,6 +6,7 @@ from qasync import asyncSlot
 
 from remote_dread_lua_console.generated.console_window_ui import Ui_ConsoleWindow
 from remote_dread_lua_console.lua_executor import LuaExecutor
+from PySide6.QtCore import Slot
 
 last_ip_file = Path(__file__).parent.joinpath("last_ip.txt")
 
@@ -25,6 +26,8 @@ class ConsoleWindow(QtWidgets.QMainWindow, Ui_ConsoleWindow):
             ip = ""
 
         self.executor = LuaExecutor(ip)
+        self.executor.window_signals.log_for_window.connect(self.add_log_entries)
+        self.executor.window_signals.connection_changed.connect(self.update_is_connected)
         self.ip_edit.setText(ip)
         self.update_is_connected()
 
@@ -33,7 +36,9 @@ class ConsoleWindow(QtWidgets.QMainWindow, Ui_ConsoleWindow):
 
         self.history_widget.customContextMenuRequested.connect(self._on_context_menu)
         self.clear_button.clicked.connect(self.clear_log)
+        self.connect_button.clicked.connect(self.toggle_connect_state)
         self.execute_button.clicked.connect(self.execute_code)
+        self.execute_button.setEnabled(False)
         self.ip_edit.textChanged.connect(self._update_ip)
 
     @asyncSlot()
@@ -41,32 +46,23 @@ class ConsoleWindow(QtWidgets.QMainWindow, Ui_ConsoleWindow):
         executor = self.executor
 
         try:
-            self.execute_button.setEnabled(False)
-
-            if not executor.is_connected():
-                self.add_log_entry(f"Connecting to {self.executor.ip}", color=Qt.blue)
-                await executor.connect_or_raise()
-                self.update_is_connected()
-
             code = self.code_edit.toPlainText()
             self.add_log_entry(code, color=Qt.darkGreen)
-            result = await executor.run_lua_code(code)
-            try:
-                text_result = result.decode("utf-8")
-            except ValueError:
-                text_result = str(result)
-
-            self.add_log_entry(text_result)
-
+            await executor.run_lua_code(code)
         except Exception as e:
             self.add_log_entry(str(e), color=Qt.red)
 
-        finally:
-            self.execute_button.setEnabled(True)
-            self.update_is_connected()
-
     def clear_log(self):
         self.history_widget.clear()
+
+    @Slot()
+    def add_log_entries(self):
+        scrollbar = self.history_widget.verticalScrollBar()
+        autoscroll = scrollbar.value() == scrollbar.maximum()
+        self.history_widget.addItems(self.executor.pending_messages)
+        self.executor.pending_messages.clear()
+        if autoscroll:
+            self.history_widget.scrollToBottom()
 
     def add_log_entry(self, message: str, color: Qt.GlobalColor | None = None):
         scrollbar = self.history_widget.verticalScrollBar()
@@ -89,14 +85,34 @@ class ConsoleWindow(QtWidgets.QMainWindow, Ui_ConsoleWindow):
         if result is self._copy_to_clipboard_action:
             set_clipboard(item.text())
 
+    @Slot()
     def update_is_connected(self):
         if self.executor.is_connected():
             msg = "Connected"
+            btn_label = "Disconnect"
             last_ip_file.write_text(self.executor.ip)
+            self.execute_button.setEnabled(True)
         else:
             msg = "Disconnected"
+            btn_label = "Connect"
+            self.execute_button.setEnabled(False)
 
         self.connected_label.setText(msg)
+        self.connect_button.setText(btn_label)
 
     def _update_ip(self):
         self.executor.ip = self.ip_edit.text().strip()
+
+    @asyncSlot()
+    async def toggle_connect_state(self):
+        executor = self.executor
+        try:
+            if not executor.is_connected():
+                self.add_log_entry(f"Connecting to {executor.ip}", color=Qt.blue)
+                await executor.connect_or_raise()
+                self.add_log_entry(f"Connected to {executor.ip}", color=Qt.blue)
+            else:
+                executor.disconnect()
+
+        except Exception as e:
+            self.add_log_entry(str(e), color=Qt.red)
