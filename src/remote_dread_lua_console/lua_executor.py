@@ -89,7 +89,7 @@ class LuaExecutor(QObject):
         self._ip = value
 
     def emit_new_message(self, new_message: str):
-        start_timer = len(self.pending_messages) > 0
+        start_timer = len(self.pending_messages) == 0
         self.pending_messages.append(new_message)
         if start_timer:
             QtCore.QTimer.singleShot(200, self.window_signals.log_for_window.emit)
